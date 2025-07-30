@@ -1,0 +1,118 @@
+package bank;
+
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.time.LocalDate;
+import java.util.Scanner;
+
+public class Accounts {
+
+	private Connection connection;
+	private Scanner scanner;
+
+	public Accounts(Connection connection,Scanner scanner) {
+		
+		this.connection=connection;
+		this.scanner=scanner;
+		
+	}
+	public long open_account(String email)
+	{
+		if(!account_exists(email))
+		{
+			String open_account="insert into Account(accountNumber,fullName,email,balance,securityPin,sqldate)values(?,?,?,?,?,?)";
+			scanner.nextLine();
+			System.out.println("Enter full name: ");
+			String fullName=scanner.nextLine();
+			System.out.println("Enter initial amount: ");
+			double balance=scanner.nextDouble();
+			scanner.nextLine();
+			System.out.println("Enter Security Pin: ");
+			String securityPin=scanner.nextLine();
+			LocalDate localDate = LocalDate.now();
+            Date sqlDate = Date.valueOf(localDate);
+			try {
+				long accountNumber=generate_account_number();
+				PreparedStatement preparedStatement=connection.prepareStatement(open_account);
+				preparedStatement.setLong(1, accountNumber);
+				preparedStatement.setString(2, fullName);
+				preparedStatement.setString(3, email);
+				preparedStatement.setDouble(4,balance);
+				preparedStatement.setString(5, securityPin);
+				preparedStatement.setDate(6, sqlDate);
+				int result=preparedStatement.executeUpdate();
+				if(result>0)
+					return accountNumber;
+				else
+					throw new RuntimeException("Account creation failed!!");
+			}
+			catch(SQLException e)
+			{
+				e.printStackTrace();
+			}
+			
+		}
+		throw new RuntimeException("Account already exists..");
+	}
+	public long get_account_number(String email) {
+		String query="select accountNumber from Account where email=?";
+		try {
+			PreparedStatement preparedStatement=connection.prepareStatement(query);
+			preparedStatement.setString(1, email);
+			ResultSet rs=preparedStatement.executeQuery();
+			if(rs.next())
+			{
+				return rs.getLong("accountNumber");
+			}
+		}
+		catch(SQLException e)
+		{
+			e.printStackTrace();
+		}
+		throw new RuntimeException("Account number doesn't exists!..");
+		
+	}
+	public long generate_account_number()
+	{
+		try {
+		Statement statement=connection.createStatement();
+		ResultSet rs=statement.executeQuery("select accountNumber from Account order by accountNumber desc limit 1");
+		if(rs.next()) {
+			long lastNumber=rs.getLong("accountNumber");
+			return lastNumber+1;
+		}else {
+			return 10000100;
+		}
+		}
+		catch(SQLException e){
+			e.printStackTrace();		
+		}
+		return 10000100;
+	}
+	public boolean account_exists(String email)
+	{
+		String query="select accountNumber from Account where email=?";
+		try {
+			PreparedStatement preparedStatement=connection.prepareStatement(query);
+			preparedStatement.setString(1, email);
+			ResultSet rs=preparedStatement.executeQuery();
+			if(rs.next()) {
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+		catch(SQLException e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+}
+	
+
+	
