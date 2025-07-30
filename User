@@ -1,0 +1,106 @@
+package bank;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Scanner;
+
+public class User {
+
+	private Connection connection;
+	private Scanner scanner;
+
+	public User(Connection connection,Scanner scanner){
+		this.connection=connection;
+		this.scanner=scanner;
+	}
+	
+	public void register()
+	{
+		scanner.nextLine();
+		System.out.println("Full name: ");
+		String fullName=scanner.nextLine();
+		System.out.println("Email: ");
+		String email=scanner.nextLine();
+		System.out.println("Password: ");
+		String password=scanner.nextLine();
+		if(user_exists(email))
+		{
+			System.out.println("User Alreader Exists for this Email!!.. Please Login!!..");
+			return;
+		}
+		String register="insert into User(fullName,email,password)values(?,?,?)";
+		try{
+			PreparedStatement preparedStatement=connection.prepareStatement(register);
+			preparedStatement.setString(1, fullName);
+			preparedStatement.setString(2,email);
+			preparedStatement.setString(3, password);
+			int result=preparedStatement.executeUpdate();
+			if(result>0) {
+				System.out.println("Registration Successfull!..");
+			}
+			else {
+				System.out.println("Registration Failed!1...");
+			}
+		}
+		catch(SQLException e){
+			e.printStackTrace();
+		}
+	}
+	
+	public String login()
+	{
+		scanner.nextLine();
+		System.out.println("Enter Email: ");
+		String email=scanner.nextLine();
+		System.out.println("Enter Password: ");
+		String password=scanner.nextLine();
+		if(!user_exists(email))
+		{
+			System.out.println("User not exists... Please Register!!...");
+			return null;
+		}
+		String login="select * from user where email=? and password=?";
+		try {
+			PreparedStatement preparedStatement=connection.prepareStatement(login);
+			preparedStatement.setString(1, email);
+			preparedStatement.setString(2, password);
+			ResultSet result=preparedStatement.executeQuery();
+			if(result.next())
+			{
+				return email;
+			}
+			else {
+				System.out.println("Incorrect password!");
+				return null;
+			}
+		}
+		catch(SQLException e){
+			e.printStackTrace();
+		}
+		return login;
+	}
+	
+	public boolean user_exists(String email)
+	{
+		String user="select * from User where email=?";
+		try {
+			PreparedStatement preparedStatement=connection.prepareStatement(user);
+			preparedStatement.setString(1, email);
+			ResultSet result=preparedStatement.executeQuery();
+			if(result.next())
+			{
+				return true;
+			}else {
+				return false;
+			}
+		}
+		catch(SQLException e){
+			e.printStackTrace();
+		}
+		return false;
+	}
+	
+
+}
